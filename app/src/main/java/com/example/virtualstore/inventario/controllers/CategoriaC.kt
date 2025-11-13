@@ -15,12 +15,12 @@ class CategoriaC {
     }
 
     private fun configurarListeners() {
-        categoriaV.setGuardarListener { nombre, descripcion ->
-            crear(nombre, descripcion)
+        categoriaV.setGuardarListener { nombre, descripcion, parentId ->
+            crear(nombre, descripcion, parentId)
         }
 
-        categoriaV.setEditarListener { id, nombre, descripcion ->
-            actualizar(id, nombre, descripcion)
+        categoriaV.setEditarListener { id, nombre, descripcion, parentId ->
+            actualizar(id, nombre, descripcion, parentId)
         }
 
         categoriaV.setEliminarListener { id ->
@@ -28,9 +28,9 @@ class CategoriaC {
         }
     }
 
-    fun crear(nombre: String, descripcion: String) {
+    fun crear(nombre: String, descripcion: String, categoria_id: Int? = null) {
         try {
-            categoriaM.crear(nombre, descripcion)
+            categoriaM.crear(nombre, descripcion, categoria_id)
             categoriaV.mostrarMensaje("Categoría guardada exitosamente")
             categoriaV.actualizarCategorias(categoriaM.obtenerTodos())
         } catch (e: Exception) {
@@ -38,9 +38,9 @@ class CategoriaC {
         }
     }
 
-    fun actualizar(id: Int, nombre: String, descripcion: String) {
+    fun actualizar(id: Int, nombre: String, descripcion: String, categoria_id: Int? = null) {
         try {
-            categoriaM.actualizar(id, nombre, descripcion)
+            categoriaM.actualizar(id, nombre, descripcion, categoria_id)
             categoriaV.mostrarMensaje("Categoría actualizada exitosamente")
             categoriaV.actualizarCategorias(categoriaM.obtenerTodos())
         } catch (e: Exception) {

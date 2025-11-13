@@ -14,7 +14,9 @@ class DBHelper(context: Context) :
         CREATE TABLE categoria (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             nombre TEXT NOT NULL,
-            descripcion TEXT DEFAULT NULL
+            descripcion TEXT DEFAULT NULL,
+            categoria_id INTEGER DEFAULT NULL,
+            FOREIGN KEY (categoria_id) REFERENCES categoria(id)
         )
     """
     private val SQL_CREATE_TABLE_PRODUCTO = """
