@@ -7,7 +7,7 @@ import com.example.virtualstore.DBHelper
 import kotlin.collections.iterator
 import kotlin.collections.set
 
-data class DetalleVentaM(
+data class DetalleVM(
     var venta: VentaM? = null,
     var producto: ProductoM? = null,
     var cantidad: Int? = null,
@@ -18,10 +18,10 @@ data class DetalleVentaM(
         return (precio ?: 0.0) * (cantidad ?: 0)
     }
 
-    fun crear(ventaNro: Long, detalles: List<DetalleVentaM>) { //db: SQLiteDatabase
+    fun crear(ventaNro: Long, detalles: List<DetalleVM>) { //db: SQLiteDatabase
         val db = dbHelper?.writableDatabase ?: throw IllegalStateException("dbHelper is null")
         for (detalle in detalles) {
-            val values = toContentValues(ventaNro, detalle)
+            val values = toCV(ventaNro, detalle)
             val result = db.insert("detalle_venta", null, values)
             if (result == -1L) {
                 throw Exception("Error al crear el detalle de venta")
@@ -34,8 +34,8 @@ data class DetalleVentaM(
         }
     }
 
-    fun obtenerPorNroVenta(ventaNro: Int): List<DetalleVentaM> {
-        val detallesList = mutableListOf<DetalleVentaM>()
+    fun getByNroVenta(ventaNro: Int): List<DetalleVM> {
+        val detallesList = mutableListOf<DetalleVM>()
         val db = dbHelper?.readableDatabase ?: throw IllegalStateException("dbHelper is null")
         val cursor = db.query(
             "detalle_venta",
@@ -45,16 +45,16 @@ data class DetalleVentaM(
             null, null, null
         )
         while (cursor.moveToNext()) {
-            val detalle = toDetalleVentaModel(cursor)
+            val detalle = toDVM(cursor)
             detallesList.add(detalle)
         }
         cursor.close()
         return detallesList
     }
 
-    fun actualizar(ventaNro: Long, detalles: List<DetalleVentaM>) { //, db: SQLiteDatabase
+    fun actualizar(ventaNro: Long, detalles: List<DetalleVM>) { //, db: SQLiteDatabase
         val db = dbHelper?.writableDatabase ?: throw IllegalStateException("dbHelper is null")
-        val detallesAntiguos = obtenerPorNroVenta(ventaNro.toInt())
+        val detallesAntiguos = getByNroVenta(ventaNro.toInt())
         for (d in detallesAntiguos) {
             val restoreQuery = "UPDATE producto SET cantidad = cantidad + ? WHERE id = ?"
             db.execSQL(restoreQuery, arrayOf(d.cantidad.toString(), d.producto?.id.toString()))
@@ -71,7 +71,7 @@ data class DetalleVentaM(
         }
     }
 
-    fun validarStock(ventaNro: Int? = null, detalles: List<DetalleVentaM>): Boolean {
+    fun validarStock(ventaNro: Int? = null, detalles: List<DetalleVM>): Boolean {
         if (ventaNro != null) {
             val diferencias = mutableMapOf<Int, Int>()
 
@@ -81,7 +81,7 @@ data class DetalleVentaM(
                 diferencias[productoId] = cantidadNueva
             }
 
-            val detallesActuales = obtenerPorNroVenta(ventaNro)
+            val detallesActuales = getByNroVenta(ventaNro)
             for (detalle in detallesActuales) {
                 val productoId = detalle.producto?.id ?: continue
                 val cantidadActual = detalle.cantidad ?: 0
@@ -107,7 +107,7 @@ data class DetalleVentaM(
         return true
     }
 
-    private fun toContentValues(ventaNro: Long, detalle: DetalleVentaM): ContentValues {
+    private fun toCV(ventaNro: Long, detalle: DetalleVM): ContentValues {
         return ContentValues().apply {
             put("venta_nro", ventaNro)
             put("producto_id", detalle.producto?.id)
@@ -116,10 +116,10 @@ data class DetalleVentaM(
         }
     }
 
-    private fun toDetalleVentaModel(cursor: Cursor): DetalleVentaM {
+    private fun toDVM(cursor: Cursor): DetalleVM {
         with(cursor) {
             val productoId = getInt(getColumnIndexOrThrow("producto_id"))
-            return DetalleVentaM(
+            return DetalleVM(
                 producto = ProductoM(dbHelper = dbHelper).obtenerPorId(productoId),
                 cantidad = getInt(cursor.getColumnIndexOrThrow("cantidad")),
                 precio = getDouble(cursor.getColumnIndexOrThrow("precio"))

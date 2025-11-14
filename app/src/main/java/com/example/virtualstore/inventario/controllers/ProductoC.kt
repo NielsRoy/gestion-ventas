@@ -30,7 +30,7 @@ class ProductoC {
 
     fun cargarDatos() {
         productoV.actualizarProductos(productoM.obtenerTodos())
-        productoV.actualizarCategorias(productoM.obtenerTodasLasCategorias())
+        productoV.actualizarCategorias(productoM.getAllCategorias())
     }
 
     private fun crear(nombre: String, precioStr: String, cantidadStr: String, categoriaId: Int) {

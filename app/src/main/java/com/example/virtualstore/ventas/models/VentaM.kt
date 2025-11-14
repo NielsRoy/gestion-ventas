@@ -12,7 +12,7 @@ data class VentaM(
     var total: Double? = null,
     var cliente: ClienteM? = null,
     var repartidor: RepartidorM? = null,
-    var detalles: MutableList<DetalleVentaM> = mutableListOf(),
+    var detalles: MutableList<DetalleVM> = mutableListOf(),
     val dbHelper: DBHelper? = null
 ) {
     fun crear(
@@ -20,24 +20,28 @@ data class VentaM(
         hora: String,
         clienteId: Int,
         repartidorId: Int,
-        detalles: List<DetalleVentaM>
+        detalles: List<DetalleVM>,
+        estrategia: VentaStrategy
     ) {
         if (detalles.isEmpty()) {
             throw Exception("La venta debe tener al menos un producto")
         }
-        if (!DetalleVentaM(dbHelper = dbHelper).validarStock(detalles = detalles)) {
+        if (!DetalleVM(dbHelper = dbHelper).validarStock(detalles = detalles)) {
             throw Exception("Stock insuficiente para uno o más productos")
         }
         val db = dbHelper?.writableDatabase ?: throw IllegalStateException("dbHelper is null")
         try {
             db.beginTransaction()
-            val total = detalles.sumOf { it.calcularSubtotal() }
-            val values = toContentValues(fecha, hora, total, clienteId, repartidorId)
+
+            // 2. Usar la estrategia para calcular el total
+            val total = estrategia.calcularTotal(detalles)
+
+            val values = toCV(fecha, hora, total, clienteId, repartidorId)
             val ventaNro = db.insert("venta", null, values)
             if (ventaNro == -1L) {
                 throw Exception("Error al crear la venta")
             }
-            DetalleVentaM(dbHelper = dbHelper).crear(ventaNro, detalles)
+            DetalleVM(dbHelper = dbHelper).crear(ventaNro, detalles)
             db.setTransactionSuccessful()
         } catch (e: Exception) {
             throw e
@@ -46,7 +50,7 @@ data class VentaM(
         }
     }
 
-    fun obtenerTodos(): List<VentaM> {
+    fun getTodos(): List<VentaM> {
         val ventasList = mutableListOf<VentaM>()
         val db = dbHelper?.readableDatabase ?: throw IllegalStateException("dbHelper is null")
         val cursor = db.query(
@@ -55,7 +59,7 @@ data class VentaM(
             null, null, null, null, "nro DESC"
         )
         while (cursor.moveToNext()) {
-            val venta = toVentaModel(cursor)
+            val venta = toVM(cursor)
             ventasList.add(venta)
         }
         cursor.close()
@@ -68,24 +72,28 @@ data class VentaM(
         hora: String,
         clienteId: Int,
         repartidorId: Int,
-        detalles: List<DetalleVentaM>
+        detalles: List<DetalleVM>,
+        estrategia: VentaStrategy
     ) {
         if (detalles.isEmpty()) {
             throw Exception("La venta debe tener al menos un producto")
         }
-        if (!DetalleVentaM(dbHelper = dbHelper).validarStock(ventaNro, detalles)) {
+        if (!DetalleVM(dbHelper = dbHelper).validarStock(ventaNro, detalles)) {
             throw Exception("Stock insuficiente para uno o más productos")
         }
         val db = dbHelper?.writableDatabase ?: throw IllegalStateException("dbHelper is null")
         try {
             db.beginTransaction()
-            val total = detalles.sumOf { it.calcularSubtotal() }
-            val values = toContentValues(fecha, hora, total, clienteId, repartidorId)
+
+            // 4. Usar la estrategia para recalcular el total
+            val total = estrategia.calcularTotal(detalles)
+
+            val values = toCV(fecha, hora, total, clienteId, repartidorId)
             val rowsAffected = db.update("venta", values, "nro = ?", arrayOf(ventaNro.toString()))
             if (rowsAffected == 0) {
                 throw Exception("Error al actualizar la venta")
             }
-            DetalleVentaM(dbHelper = dbHelper).actualizar(ventaNro.toLong(), detalles)
+            DetalleVM(dbHelper = dbHelper).actualizar(ventaNro.toLong(), detalles)
             db.setTransactionSuccessful()
         } catch (e: Exception) {
             throw e
@@ -102,25 +110,25 @@ data class VentaM(
         }
     }
 
-    private fun toVentaModel(cursor: Cursor): VentaM {
+    private fun toVM(cursor: Cursor): VentaM {
         with(cursor) {
             val clienteId = getInt(getColumnIndexOrThrow("cliente_id"))
             val repartidorId = getInt(getColumnIndexOrThrow("repartidor_id"))
             val nro = getInt(getColumnIndexOrThrow("nro"))
-            val detalles = DetalleVentaM(dbHelper = dbHelper).obtenerPorNroVenta(nro) as MutableList<DetalleVentaM>
+            val detalles = DetalleVM(dbHelper = dbHelper).getByNroVenta(nro) as MutableList<DetalleVM>
             return VentaM(
                 nro = nro,
                 fecha = getString(getColumnIndexOrThrow("fecha")),
                 hora = getString(getColumnIndexOrThrow("hora")),
                 total = getDouble(getColumnIndexOrThrow("total")),
-                cliente = ClienteM(dbHelper = dbHelper).obtenerPorId(clienteId),
-                repartidor = RepartidorM(dbHelper = dbHelper).obtenerPorId(repartidorId),
+                cliente = ClienteM(dbHelper = dbHelper).getById(clienteId),
+                repartidor = RepartidorM(dbHelper = dbHelper).getById(repartidorId),
                 detalles = detalles
             )
         }
     }
 
-    private fun toContentValues(fecha: String, hora: String, total: Double, clienteId: Int, repartidorId: Int): ContentValues {
+    private fun toCV(fecha: String, hora: String, total: Double, clienteId: Int, repartidorId: Int): ContentValues {
         return ContentValues().apply {
             put("fecha", fecha)
             put("hora", hora)
@@ -130,13 +138,13 @@ data class VentaM(
         }
     }
 
-    fun obtenerTodosLosClientes(): List<ClienteM> {
-        return ClienteM(dbHelper = dbHelper).obtenerTodos()
+    fun getAllClientes(): List<ClienteM> {
+        return ClienteM(dbHelper = dbHelper).getAll()
     }
-    fun obtenerTodosLosRepartidores(): List<RepartidorM> {
-        return RepartidorM(dbHelper = dbHelper).obtenerTodos()
+    fun getAllRepartidores(): List<RepartidorM> {
+        return RepartidorM(dbHelper = dbHelper).getAll()
     }
-    fun obtenerTodosLosProductos(): List<ProductoM> {
+    fun getAllProductos(): List<ProductoM> {
         return ProductoM(dbHelper = dbHelper).obtenerTodos()
     }
 }

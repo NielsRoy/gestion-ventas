@@ -23,7 +23,7 @@ data class ProductoM(
                 throw Exception("Precio y cantidad deben ser mayores a 0")
             }
             val db = dbHelper?.writableDatabase ?: throw IllegalStateException("dbHelper is null")
-            val values = toContentValues(nombre, precio, cantidad, categoriaId)
+            val values = toCV(nombre, precio, cantidad, categoriaId)
             val result = db.insert("producto", null, values)
             if (result == -1L) {
                 throw Exception("Error al guardar el producto")
@@ -48,7 +48,7 @@ data class ProductoM(
             null, null, null, null, "id DESC"
         )
         while (cursor.moveToNext()) {
-            val producto = toProductoModel(cursor)
+            val producto = toPM(cursor)
             productosList.add(producto)
         }
         cursor.close()
@@ -66,7 +66,7 @@ data class ProductoM(
         )
         var producto: ProductoM? = null
         if(cursor.moveToFirst()) {
-            producto = toProductoModel(cursor)
+            producto = toPM(cursor)
         }
         cursor.close()
         return producto
@@ -83,7 +83,7 @@ data class ProductoM(
                 throw Exception("Precio y cantidad deben ser mayores a 0")
             }
             val db = dbHelper?.writableDatabase ?: throw IllegalStateException("dbHelper is null")
-            val values = toContentValues(nombre, precio, cantidad, categoriaId)
+            val values = toCV(nombre, precio, cantidad, categoriaId)
             val filasAfectadas = db.update("producto", values, "id = ?", arrayOf(id.toString()))
             if (filasAfectadas <= 0) {
                 throw Exception("Error al actualizar el producto")
@@ -101,7 +101,7 @@ data class ProductoM(
         }
     }
 
-    private fun toContentValues(nombre: String, precio: Double, cantidad: Int, categoriaId: Int): ContentValues {
+    private fun toCV(nombre: String, precio: Double, cantidad: Int, categoriaId: Int): ContentValues {
         return ContentValues().apply {
             put("nombre", nombre)
             put("precio", precio)
@@ -110,7 +110,7 @@ data class ProductoM(
         }
     }
 
-    private fun toProductoModel(cursor: Cursor): ProductoM {
+    private fun toPM(cursor: Cursor): ProductoM {
         with(cursor) {
             val categoriaId = getInt(getColumnIndexOrThrow("categoria_id"))
             return ProductoM(
@@ -123,7 +123,7 @@ data class ProductoM(
         }
     }
 
-    fun obtenerTodasLasCategorias(): List<CategoriaM> {
+    fun getAllCategorias(): List<CategoriaM> {
         return CategoriaM(dbHelper = dbHelper).getTodos()
     }
 }

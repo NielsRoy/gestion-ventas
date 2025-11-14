@@ -1,6 +1,7 @@
 package com.example.virtualstore.ventas.controllers
 
-import com.example.virtualstore.ventas.models.DetalleVentaM
+import com.example.virtualstore.ventas.models.DetalleVM
+import com.example.virtualstore.ventas.models.VentaStrategy // Importar la interfaz
 import com.example.virtualstore.ventas.models.VentaM
 import com.example.virtualstore.ventas.views.VentaV
 
@@ -16,11 +17,11 @@ class VentaC {
     }
 
     private fun configurarListeners() {
-        ventaV.setGuardarVentaListener { fecha, hora, clienteId, repartidorId, detalles ->
-            crearVenta(fecha, hora, clienteId, repartidorId, detalles)
+        ventaV.setGuardarVentaListener { fecha, hora, clienteId, repartidorId, detalles, estrategia ->
+            crearVenta(fecha, hora, clienteId, repartidorId, detalles, estrategia)
         }
-        ventaV.setActualizarVentaListener { ventaNro, fecha, hora, clienteId, repartidorId, detalles ->
-            actualizarVenta(ventaNro, fecha, hora, clienteId, repartidorId, detalles)
+        ventaV.setActualizarVentaListener { ventaNro, fecha, hora, clienteId, repartidorId, detalles, estrategia ->
+            actualizarVenta(ventaNro, fecha, hora, clienteId, repartidorId, detalles, estrategia)
         }
         ventaV.setEliminarVentaListener {
             eliminarVenta(it)
@@ -28,15 +29,17 @@ class VentaC {
     }
 
     private fun cargarDatos() {
-        ventaV.actualizarVentas(ventaM.obtenerTodos())
-        ventaV.actualizarClientes(ventaM.obtenerTodosLosClientes())
-        ventaV.actualizarRepartidores(ventaM.obtenerTodosLosRepartidores())
-        ventaV.actualizarProductos(ventaM.obtenerTodosLosProductos())
+        ventaV.actualizarVentas(ventaM.getTodos())
+        ventaV.actualizarClientes(ventaM.getAllClientes())
+        ventaV.actualizarRepartidores(ventaM.getAllRepartidores())
+        ventaV.actualizarProductos(ventaM.getAllProductos())
     }
 
-    fun crearVenta(fecha: String, hora: String, clienteId: Int, repartidorId: Int,  detalles: List<DetalleVentaM>) {
+    fun crearVenta(fecha: String, hora: String, clienteId: Int, repartidorId: Int, detalles: List<DetalleVM>,
+                   estrategia: VentaStrategy
+    ) {
         try {
-            ventaM.crear(fecha, hora, clienteId, repartidorId, detalles)
+            ventaM.crear(fecha, hora, clienteId, repartidorId, detalles, estrategia)
             ventaV.mostrarMensaje("Venta registrada exitosamente")
             cargarDatos()
         } catch (e: Exception) {
@@ -44,9 +47,11 @@ class VentaC {
         }
     }
 
-    fun actualizarVenta(ventaNro: Int, fecha: String, hora: String, clienteId: Int, repartidorId: Int, detalles: List<DetalleVentaM>) {
+    fun actualizarVenta(ventaNro: Int, fecha: String, hora: String, clienteId: Int, repartidorId: Int, detalles: List<DetalleVM>,
+                        estrategia: VentaStrategy
+    ) {
         try {
-            ventaM.actualizar(ventaNro, fecha, hora, clienteId, repartidorId, detalles)
+            ventaM.actualizar(ventaNro, fecha, hora, clienteId, repartidorId, detalles, estrategia)
             ventaV.mostrarMensaje("Venta actualizada exitosamente")
             cargarDatos()
         } catch (e: Exception) {

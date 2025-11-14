@@ -11,7 +11,7 @@ class ClienteC {
         this.clienteV = clienteV
         this.clienteM = clienteM
         configurarListeners()
-        clienteV.actualizarClientes(clienteM.obtenerTodos())
+        clienteV.actualizarClientes(clienteM.getAll())
     }
 
     private fun configurarListeners() {
@@ -30,7 +30,7 @@ class ClienteC {
         try {
             clienteM.crear(nombre, celular, direccion)
             clienteV.mostrarMensaje("Producto guardado exitosamente")
-            clienteV.actualizarClientes(clienteM.obtenerTodos())
+            clienteV.actualizarClientes(clienteM.getAll())
         } catch (e: Exception) {
             clienteV.mostrarMensaje(e.message)
         }
@@ -40,7 +40,7 @@ class ClienteC {
         try {
             clienteM.actualizar(id, nombre, precioStr, cantidadStr)
             clienteV.mostrarMensaje("Producto actualizado exitosamente")
-            clienteV.actualizarClientes(clienteM.obtenerTodos())
+            clienteV.actualizarClientes(clienteM.getAll())
         } catch (e: Exception) {
             clienteV.mostrarMensaje(e.message)
         }
@@ -50,7 +50,7 @@ class ClienteC {
         try {
             clienteM.eliminar(id)
             clienteV.mostrarMensaje("Producto eliminado exitosamente")
-            clienteV.actualizarClientes(clienteM.obtenerTodos())
+            clienteV.actualizarClientes(clienteM.getAll())
         } catch (e: Exception) {
             clienteV.mostrarMensaje(e.message)
         }

@@ -11,7 +11,7 @@ class RepartidorC {
         this.repartidorV = repartidorV
         this.repartidorM = repartidorM
         configurarListeners()
-        repartidorV.actualizarRepartidores(repartidorM.obtenerTodos())
+        repartidorV.actualizarRepartidores(repartidorM.getAll())
     }
 
     private fun configurarListeners() {
@@ -30,7 +30,7 @@ class RepartidorC {
         try {
             repartidorM.crear(nombre, celular, direccion)
             repartidorV.mostrarMensaje("Repartidor guardado exitosamente")
-            repartidorV.actualizarRepartidores(repartidorM.obtenerTodos())
+            repartidorV.actualizarRepartidores(repartidorM.getAll())
         } catch (e: Exception) {
             repartidorV.mostrarMensaje(e.message)
         }
@@ -40,7 +40,7 @@ class RepartidorC {
         try {
             repartidorM.actualizar(id, nombre, precioStr, cantidadStr)
             repartidorV.mostrarMensaje("Repartidor actualizado exitosamente")
-            repartidorV.actualizarRepartidores(repartidorM.obtenerTodos())
+            repartidorV.actualizarRepartidores(repartidorM.getAll())
         } catch (e: Exception) {
             repartidorV.mostrarMensaje(e.message)
         }
@@ -50,7 +50,7 @@ class RepartidorC {
         try {
             repartidorM.eliminar(id)
             repartidorV.mostrarMensaje("Repartidor eliminado exitosamente")
-            repartidorV.actualizarRepartidores(repartidorM.obtenerTodos())
+            repartidorV.actualizarRepartidores(repartidorM.getAll())
         } catch (e: Exception) {
             repartidorV.mostrarMensaje(e.message)
         }

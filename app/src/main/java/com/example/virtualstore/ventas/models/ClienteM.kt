@@ -22,7 +22,7 @@ data class ClienteM(
                 throw Exception("Celular debe tener al menos 3 digitos")
             }
             val db = dbHelper?.writableDatabase ?: throw IllegalStateException("dbHelper is null")
-            val values = toContentValues(nombre, celular, direccion)
+            val values = toCV(nombre, celular, direccion)
             val result = db.insert("cliente", null, values)
             if (result == -1L) {
                 throw Exception("Error al guardar el producto")
@@ -32,7 +32,7 @@ data class ClienteM(
         }
     }
 
-    fun obtenerTodos(): List<ClienteM> {
+    fun getAll(): List<ClienteM> {
         val clientesList = mutableListOf<ClienteM>()
         val db = dbHelper?.readableDatabase ?: throw IllegalStateException("dbHelper is null")
         val cursor = db.query(
@@ -41,14 +41,14 @@ data class ClienteM(
             null, null, null, null, "id DESC"
         )
         while (cursor.moveToNext()) {
-            val cliente = toClienteModel(cursor)
+            val cliente = toCM(cursor)
             clientesList.add(cliente)
         }
         cursor.close()
         return clientesList
     }
 
-    fun obtenerPorId(id: Int): ClienteM? {
+    fun getById(id: Int): ClienteM? {
         val db = dbHelper?.readableDatabase ?: throw IllegalStateException("dbHelper is null")
         val cursor = db.query(
             "cliente",
@@ -59,7 +59,7 @@ data class ClienteM(
         )
         var cliente: ClienteM? = null
         if(cursor.moveToFirst()) {
-            cliente = toClienteModel(cursor)
+            cliente = toCM(cursor)
         }
         cursor.close()
         return cliente
@@ -75,7 +75,7 @@ data class ClienteM(
                 throw Exception("Celular debe tener al menos 3 digitos")
             }
             val db = dbHelper?.writableDatabase ?: throw IllegalStateException("dbHelper is null")
-            val values = toContentValues(nombre, celular, direccion)
+            val values = toCV(nombre, celular, direccion)
             val filasAfectadas = db.update("cliente", values, "id = ?", arrayOf(id.toString()))
             if (filasAfectadas <= 0) {
                 throw Exception("Error al actualizar el producto")
@@ -93,7 +93,7 @@ data class ClienteM(
         }
     }
 
-    private fun toContentValues(nombre: String, celular: Int, direccion: String): ContentValues {
+    private fun toCV(nombre: String, celular: Int, direccion: String): ContentValues {
         return ContentValues().apply {
             put("nombre", nombre)
             put("celular", celular)
@@ -101,7 +101,7 @@ data class ClienteM(
         }
     }
 
-    private fun toClienteModel(cursor: Cursor): ClienteM {
+    private fun toCM(cursor: Cursor): ClienteM {
         with(cursor) {
             return ClienteM(
                 id = getInt(getColumnIndexOrThrow("id")),

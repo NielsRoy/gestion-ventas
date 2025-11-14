@@ -22,7 +22,7 @@ data class RepartidorM(
                 throw Exception("Celular debe tener al menos 3 digitos")
             }
             val db = dbHelper?.writableDatabase ?: throw IllegalStateException("dbHelper is null")
-            val values = toContentValues(nombre, celular, direccion)
+            val values = toCV(nombre, celular, direccion)
             val result = db.insert("repartidor", null, values)
             if (result == -1L) {
                 throw Exception("Error al guardar al repartidor")
@@ -32,7 +32,7 @@ data class RepartidorM(
         }
     }
 
-    fun obtenerTodos(): List<RepartidorM> {
+    fun getAll(): List<RepartidorM> {
         val repartidoresList = mutableListOf<RepartidorM>()
         val db = dbHelper?.readableDatabase ?: throw IllegalStateException("dbHelper is null")
         val cursor = db.query(
@@ -41,14 +41,14 @@ data class RepartidorM(
             null, null, null, null, "id DESC"
         )
         while (cursor.moveToNext()) {
-            val repartidor = toRepartidorModel(cursor)
+            val repartidor = toRM(cursor)
             repartidoresList.add(repartidor)
         }
         cursor.close()
         return repartidoresList
     }
 
-    fun obtenerPorId(id: Int): RepartidorM? {
+    fun getById(id: Int): RepartidorM? {
         val db = dbHelper?.readableDatabase ?: throw IllegalStateException("dbHelper is null")
         val cursor = db.query(
             "repartidor",
@@ -59,7 +59,7 @@ data class RepartidorM(
         )
         var repartidor: RepartidorM? = null
         if(cursor.moveToFirst()) {
-            repartidor = toRepartidorModel(cursor)
+            repartidor = toRM(cursor)
         }
         cursor.close()
         return repartidor
@@ -75,7 +75,7 @@ data class RepartidorM(
                 throw Exception("Celular debe tener al menos 3 digitos")
             }
             val db = dbHelper?.writableDatabase ?: throw IllegalStateException("dbHelper is null")
-            val values = toContentValues(nombre, celular, direccion)
+            val values = toCV(nombre, celular, direccion)
             val filasAfectadas = db.update("repartidor", values, "id = ?", arrayOf(id.toString()))
             if (filasAfectadas <= 0) {
                 throw Exception("Error al actualizar al repartidor")
@@ -93,7 +93,7 @@ data class RepartidorM(
         }
     }
 
-    private fun toContentValues(nombre: String, celular: Int, direccion: String): ContentValues {
+    private fun toCV(nombre: String, celular: Int, direccion: String): ContentValues {
         return ContentValues().apply {
             put("nombre", nombre)
             put("celular", celular)
@@ -101,7 +101,7 @@ data class RepartidorM(
         }
     }
 
-    private fun toRepartidorModel(cursor: Cursor): RepartidorM {
+    private fun toRM(cursor: Cursor): RepartidorM {
         with(cursor) {
             return RepartidorM(
                 id = getInt(getColumnIndexOrThrow("id")),

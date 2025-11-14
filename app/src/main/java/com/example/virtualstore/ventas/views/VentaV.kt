@@ -56,10 +56,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.virtualstore.R
 import com.example.virtualstore.ventas.models.ClienteM
-import com.example.virtualstore.ventas.models.DetalleVentaM
+import com.example.virtualstore.ventas.models.DetalleVM
 import com.example.virtualstore.inventario.models.ProductoM
+import com.example.virtualstore.ventas.models.VentaStrategy
 import com.example.virtualstore.ventas.models.RepartidorM
+import com.example.virtualstore.ventas.models.VentaDescuento
 import com.example.virtualstore.ventas.models.VentaM
+import com.example.virtualstore.ventas.models.VentaNormal
 import com.vanpra.composematerialdialogs.MaterialDialog
 import com.vanpra.composematerialdialogs.datetime.date.datepicker
 import com.vanpra.composematerialdialogs.datetime.time.timepicker
@@ -78,11 +81,11 @@ class VentaV {
 
     constructor(ventaM: VentaM) {
         this.ventaM = ventaM
-        actualizarProductos(ventaM.obtenerTodosLosProductos())
+        actualizarProductos(ventaM.getAllProductos())
     }
 
-    private var guardarVentaListener: (String, String, Int, Int, List<DetalleVentaM>) -> Unit = { _, _, _, _, _ -> }
-    private var actualizarVentaListener: (Int, String, String, Int, Int, List<DetalleVentaM>) -> Unit = { _, _, _, _, _, _ -> }
+    private var guardarVentaListener: (String, String, Int, Int, List<DetalleVM>, VentaStrategy) -> Unit = { _, _, _, _, _, _ -> }
+    private var actualizarVentaListener: (Int, String, String, Int, Int, List<DetalleVM>, VentaStrategy) -> Unit = { _, _, _, _, _, _, _ -> }
     private var eliminarVentaListener: (Int) -> Unit = { _ -> }
     private var ventas = MutableStateFlow<List<VentaM>>(emptyList())
     private var clientes = MutableStateFlow<List<ClienteM>>(emptyList())
@@ -98,10 +101,10 @@ class VentaV {
     fun mostrarMensaje(m: String?) {
         mensaje.value = m
     }
-    fun setGuardarVentaListener(listener: (String, String, Int, Int, List<DetalleVentaM>) -> Unit) {
+    fun setGuardarVentaListener(listener: (String, String, Int, Int, List<DetalleVM>, VentaStrategy) -> Unit) {
         guardarVentaListener = listener
     }
-    fun setActualizarVentaListener(listener: (Int, String, String, Int, Int, List<DetalleVentaM>) -> Unit) {
+    fun setActualizarVentaListener(listener: (Int, String, String, Int, Int, List<DetalleVM>, VentaStrategy) -> Unit) {
         actualizarVentaListener = listener
     }
     fun setEliminarVentaListener(listener: (Int) -> Unit) {
@@ -117,7 +120,6 @@ class VentaV {
         this.repartidores.value = repartidores
     }
     fun actualizarProductos(productos: List<ProductoM>) {
-        //this.productosState.value = productos
         this.productos.value = productos.filter { (it.cantidad ?: 0) > 0 }
     }
 
@@ -140,10 +142,10 @@ class VentaV {
                 title = "Nueva Venta",
                 onBack = {
                     mostrarAgregarVenta = false
-                    actualizarProductos(ventaM.obtenerTodosLosProductos())
+                    actualizarProductos(ventaM.getAllProductos())
                 },
-                onGuardarVenta = { nroVenta, fecha, hora, clienteId, repartidorId, detalles ->
-                    guardarVentaListener(fecha, hora, clienteId, repartidorId, detalles)
+                onGuardarVenta = { nroVenta, fecha, hora, clienteId, repartidorId, detalles, estrategia ->
+                    guardarVentaListener(fecha, hora, clienteId, repartidorId, detalles, estrategia)
                     mostrarAgregarVenta = false
                 },
                 clientes = clientes,
@@ -156,10 +158,10 @@ class VentaV {
                 title = "Editar Venta #${ventaSeleccionada!!.nro}",
                 onBack = {
                     ventaSeleccionada = null
-                    actualizarProductos(ventaM.obtenerTodosLosProductos())
+                    actualizarProductos(ventaM.getAllProductos())
                 },
-                onGuardarVenta = { nroVenta, fecha, hora, clienteId, repartidorId, detalles ->
-                    actualizarVentaListener(nroVenta!!, fecha, hora, clienteId, repartidorId, detalles)
+                onGuardarVenta = { nroVenta, fecha, hora, clienteId, repartidorId, detalles, estrategia ->
+                    actualizarVentaListener(nroVenta!!, fecha, hora, clienteId, repartidorId, detalles, estrategia)
                     ventaSeleccionada = null
                 },
                 clientes = clientes,
@@ -334,7 +336,7 @@ class VentaV {
     private fun FormularioVenta(
         title: String,
         onBack: () -> Unit,
-        onGuardarVenta: (Int?, String, String, Int, Int, List<DetalleVentaM>) -> Unit,
+        onGuardarVenta: (Int?, String, String, Int, Int, List<DetalleVM>, VentaStrategy) -> Unit,
         clientes: List<ClienteM>,
         repartidores: List<RepartidorM>,
         ventaEditar: VentaM? = null
@@ -367,6 +369,17 @@ class VentaV {
         var repartidorSeleccionado by remember { mutableStateOf<RepartidorM?>(initialRepartidor) }
         var menuClienteExpandido by remember { mutableStateOf(false) }
         var menuRepartidorExpandido by remember { mutableStateOf(false) }
+
+        val estrategiasDisponibles = remember {
+            listOf(
+                VentaNormal(),
+                VentaDescuento(10.0),
+                VentaDescuento(25.0)
+            )
+        }
+        var estrategiaSeleccionada by remember { mutableStateOf(estrategiasDisponibles[0]) }
+        var menuEstrategiaExpandido by remember { mutableStateOf(false) }
+
         val productos by productos.collectAsState()
         var productoSeleccionado by remember { mutableStateOf<ProductoM?>(null) }
         var cantidad by remember { mutableStateOf("") }
@@ -374,7 +387,7 @@ class VentaV {
         val initialDetalles = remember(ventaEditar) { ventaEditar?.detalles?.toMutableList() ?: emptyList() }
         //Consultar por key
         val detalles = remember { mutableStateListOf(*initialDetalles.toTypedArray()) }
-        var detalleEditando by remember { mutableStateOf<DetalleVentaM?>(null) }
+        var detalleEditando by remember { mutableStateOf<DetalleVM?>(null) }
         var indiceEditando by remember { mutableStateOf<Int?>(null) }
         var formularioADVisible by remember { mutableStateOf(true) }
 
@@ -400,7 +413,11 @@ class VentaV {
                     Column(
                         modifier = Modifier.padding(16.dp)
                     ) {
-                        val total = detalles.sumOf { it.calcularSubtotal() }
+                        val total by remember(detalles.toList(), estrategiaSeleccionada) {
+                            derivedStateOf {
+                                estrategiaSeleccionada.calcularTotal(detalles.toList())
+                            }
+                        }
                         Row(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             modifier = Modifier.fillMaxWidth()
@@ -434,7 +451,8 @@ class VentaV {
                                         hora,
                                         clienteSeleccionado!!.id!!,
                                         repartidorSeleccionado!!.id!!,
-                                        detalles.toList()
+                                        detalles.toList(),
+                                        estrategiaSeleccionada // Aquí se pasa
                                     )
                                 }
                             },
@@ -585,6 +603,40 @@ class VentaV {
                         }
                     }
                 }
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // 10. Añadir el Dropdown para seleccionar la estrategia
+                ExposedDropdownMenuBox(
+                    expanded = menuEstrategiaExpandido,
+                    onExpandedChange = { menuEstrategiaExpandido = it }
+                )
+                {
+                    OutlinedTextField(
+                        value = estrategiaSeleccionada.getNombre(),
+                        onValueChange = { },
+                        readOnly = true,
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = menuEstrategiaExpandido) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor(),
+                        label = { Text("Tipo de Venta *") }
+                    )
+                    ExposedDropdownMenu(
+                        expanded = menuEstrategiaExpandido,
+                        onDismissRequest = { menuEstrategiaExpandido = false }
+                    ) {
+                        estrategiasDisponibles.forEach { estrategia ->
+                            DropdownMenuItem(
+                                text = { Text(estrategia.getNombre()) },
+                                onClick = {
+                                    estrategiaSeleccionada = estrategia
+                                    menuEstrategiaExpandido = false
+                                }
+                            )
+                        }
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(16.dp))
                 FormularioAgregarProducto(
                     formularioVisible = formularioADVisible,
@@ -677,7 +729,7 @@ class VentaV {
         onSeleccionarProducto: (ProductoM) -> Unit,
         onCantidadChange: (String) -> Unit,
         onPrecioChange: (String) -> Unit,
-        onAgregarDetalle: (DetalleVentaM) -> Unit,
+        onAgregarDetalle: (DetalleVM) -> Unit,
         editandoDetalle: Boolean,
         onCancelarEdicion: () -> Unit
     )
@@ -814,7 +866,7 @@ class VentaV {
     private fun validarCamposVenta(
         clienteSeleccionado: ClienteM?,
         repartidorSeleccionado: RepartidorM?,
-        detalles: List<DetalleVentaM>
+        detalles: List<DetalleVM>
     ): String?
     {
         if (clienteSeleccionado == null) {
@@ -832,7 +884,7 @@ class VentaV {
         producto: ProductoM?,
         cantidadStr: String,
         precioStr: String
-    ): DetalleVentaM?
+    ): DetalleVM?
     {
         if (producto == null) {
             mostrarMensaje("Seleccione un producto")
@@ -857,7 +909,7 @@ class VentaV {
             mostrarMensaje("Stock insuficiente. Disponible: $stockDisponible")
             return null
         }
-        return DetalleVentaM(
+        return DetalleVM(
             producto = producto,
             cantidad = cantidad,
             precio = precio
@@ -866,7 +918,7 @@ class VentaV {
 
     @Composable
     private fun ListaDetallesVenta(
-        detalles: List<DetalleVentaM>,
+        detalles: List<DetalleVM>,
         onEditarDetalle: (Int) -> Unit,
         onEliminarDetalle: (Int) -> Unit,
         modifier: Modifier = Modifier
@@ -908,7 +960,7 @@ class VentaV {
 
     @Composable
     private fun DetalleVentaItem(
-        detalle: DetalleVentaM,
+        detalle: DetalleVM,
         onEditar: () -> Unit,
         onEliminar: () -> Unit
     ) {
