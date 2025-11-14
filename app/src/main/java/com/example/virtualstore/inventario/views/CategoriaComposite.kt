@@ -1,8 +1,10 @@
-package com.example.virtualstore.inventario.models
+package com.example.virtualstore.inventario.views
+
+import com.example.virtualstore.inventario.models.CategoriaM
 
 class CategoriaComposite: CategoriaComponent {
     private var categoria: CategoriaM
-    var children: MutableList<CategoriaComponent> = mutableListOf()
+    private var children: MutableList<CategoriaComponent> = mutableListOf()
 
     constructor(categoria: CategoriaM) {
         this.categoria = categoria
@@ -26,6 +28,10 @@ class CategoriaComposite: CategoriaComponent {
 
     fun eliminar(c: CategoriaComponent) {
         children.remove(c);
+    }
+
+    fun getChildren(): List<CategoriaComponent> {
+        return this.children
     }
 
 }

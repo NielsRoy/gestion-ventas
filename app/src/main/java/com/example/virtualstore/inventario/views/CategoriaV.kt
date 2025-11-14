@@ -44,47 +44,44 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.example.virtualstore.inventario.models.CategoriaComponent
-import com.example.virtualstore.inventario.models.CategoriaComposite
-import com.example.virtualstore.inventario.models.CategoriaLeaf
 import com.example.virtualstore.inventario.models.CategoriaM
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
 class CategoriaV {
-    private var guardarListener: (String, String, Int?) -> Unit = { _, _, _ -> }
-    private var editarListener: (Int, String, String, Int?) -> Unit = { _, _, _, _ -> }
-    private var eliminarListener: (Int) -> Unit = { _ -> }
+    private var guardarLn: (String, String, Int?) -> Unit = { _, _, _ -> }
+    private var editarLn: (Int, String, String, Int?) -> Unit = { _, _, _, _ -> }
+    private var eliminarLn: (Int) -> Unit = { _ -> }
     private var categorias = MutableStateFlow<List<CategoriaM>>(emptyList())
-    private var categoriaEnEdicion by mutableStateOf<CategoriaM?>(null)
+    private var categEditing by mutableStateOf<CategoriaM?>(null)
     private val mensaje = MutableStateFlow<String?>(null)
-    private var mostrarDialogoConfirmacion by mutableStateOf(false)
-    private var categoriaAEliminar by mutableStateOf<CategoriaM?>(null)
+    private var showConfirmDiag by mutableStateOf(false)
+    private var categDeleting by mutableStateOf<CategoriaM?>(null)
 
     private var components = MutableStateFlow<List<CategoriaComponent>>(emptyList())
 
-    fun mostrarMensaje(m: String?) {
+    fun showMsj(m: String?) {
         mensaje.value = m
     }
-    fun setGuardarListener(listener: (String, String, Int?) -> Unit) {
-        guardarListener = listener
+    fun setGuardarLn(l: (String, String, Int?) -> Unit) {
+        guardarLn = l
     }
-    fun setEditarListener(listener: (Int, String, String, Int?) -> Unit) {
-        editarListener = listener
+    fun setEditarLn(l: (Int, String, String, Int?) -> Unit) {
+        editarLn = l
     }
-    fun setEliminarListener(listener: (Int) -> Unit) {
-        eliminarListener = listener
+    fun setEliminarLn(l: (Int) -> Unit) {
+        eliminarLn = l
     }
-    fun actualizarCategorias(categorias: List<CategoriaM>) {
-        this.categorias.value = categorias
+    fun actualizarCategs(c: List<CategoriaM>) {
+        this.categorias.value = c
 
-        this.components.value = getComponents(categorias)
+        this.components.value = getCompnts(c)
     }
 
     // En CategoriaV.kt
 
-    fun getComponents(c: List<CategoriaM>): List<CategoriaComponent> {
+    fun getCompnts(c: List<CategoriaM>): List<CategoriaComponent> {
         // 1. Identificar quiénes serán Composite (tienen hijos)
         val parentIds = c.mapNotNull { it.categoria_id }.toSet()
 
@@ -132,7 +129,7 @@ class CategoriaV {
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
-    fun setVisible(drawerState: DrawerState, scope: CoroutineScope) {
+    fun setVisible(ds: DrawerState, s: CoroutineScope) {
         val context = LocalContext.current
         val mensaje by mensaje.collectAsState()
         var formularioVisible by remember { mutableStateOf(true) }
@@ -142,30 +139,30 @@ class CategoriaV {
         LaunchedEffect(mensaje) {
             mensaje?.let {
                 Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
-                mostrarMensaje(null) // limpiar para que no se repita
+                showMsj(null) // limpiar para que no se repita
             }
         }
-        if (mostrarDialogoConfirmacion) {
+        if (showConfirmDiag) {
             AlertDialog(
                 onDismissRequest = {
-                    mostrarDialogoConfirmacion = false
-                    categoriaAEliminar = null
+                    showConfirmDiag = false
+                    categDeleting = null
                 },
                 title = { Text("Confirmar Eliminación") },
                 text = {
-                    Text("¿Está seguro de que desea eliminar la categoria \"${categoriaAEliminar?.nombre}\"? Esta acción no se puede deshacer.")
+                    Text("¿Está seguro de que desea eliminar la categoria \"${categDeleting?.nombre}\"? Esta acción no se puede deshacer.")
                 },
                 confirmButton = {
                     TextButton(
                         onClick = {
-                            categoriaAEliminar?.id?.let { id ->
-                                eliminarListener(id)
-                                if (categoriaEnEdicion?.id == id) {
-                                    categoriaEnEdicion = null
+                            categDeleting?.id?.let { id ->
+                                eliminarLn(id)
+                                if (categEditing?.id == id) {
+                                    categEditing = null
                                 }
                             }
-                            mostrarDialogoConfirmacion = false
-                            categoriaAEliminar = null
+                            showConfirmDiag = false
+                            categDeleting = null
                         }
                     ) {
                         Text("Eliminar")
@@ -174,8 +171,8 @@ class CategoriaV {
                 dismissButton = {
                     TextButton(
                         onClick = {
-                            mostrarDialogoConfirmacion = false
-                            categoriaAEliminar = null
+                            showConfirmDiag = false
+                            categDeleting = null
                         }
                     ) {
                         Text("Cancelar")
@@ -188,7 +185,7 @@ class CategoriaV {
                 CenterAlignedTopAppBar(
                     title = { Text("Categorias") },
                     navigationIcon = {
-                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                        IconButton(onClick = { s.launch { ds.open() } }) {
                             Icon(Icons.Default.Menu, contentDescription = "Abrir menú")
                         }
                     },
@@ -208,11 +205,11 @@ class CategoriaV {
                     .padding(top = 8.dp)
             ) {
                 if (formularioVisible) {
-                    Formulario(categorias = categoriasList)
+                    Formulario(c = categoriasList)
                     Spacer(modifier = Modifier.Companion.height(24.dp))
                 }
-                Lista(onEditarClick = { categoria ->
-                    categoriaEnEdicion = categoria
+                Lista(fn = { categoria ->
+                    categEditing = categoria
                     //setCategoriaEditando(categoria)
                     formularioVisible = true
                 })
@@ -222,7 +219,7 @@ class CategoriaV {
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
-    private fun Formulario(categorias: List<CategoriaM>) {
+    private fun Formulario(c: List<CategoriaM>) {
         var nombre by remember { mutableStateOf("") }
         var descripcion by remember { mutableStateOf("") }
 
@@ -234,12 +231,12 @@ class CategoriaV {
 
         // Creamos la lista para el dropdown
         // Filtramos para que una categoría no pueda ser su propio padre
-        val dropdownOptions = listOf(categoriaNinguna) + categorias.filter {
-            it.id != categoriaEnEdicion?.id
+        val dropdownOptions = listOf(categoriaNinguna) + c.filter {
+            it.id != categEditing?.id
         }
 
-        LaunchedEffect(categoriaEnEdicion) {
-            categoriaEnEdicion?.let { categoria ->
+        LaunchedEffect(categEditing) {
+            categEditing?.let { categoria ->
                 nombre = categoria.nombre ?: "Sin nombre"
                 descripcion = categoria.descripcion.toString()
                 selectedParent = dropdownOptions.find { it.id == categoria.categoria_id } ?: categoriaNinguna
@@ -305,11 +302,11 @@ class CategoriaV {
                 onClick = {
                     val parentId = selectedParent?.id // Será null si se seleccionó "Ninguna"
 
-                    if (categoriaEnEdicion != null && categoriaEnEdicion?.id != null) {
-                        editarListener(categoriaEnEdicion!!.id!!, nombre, descripcion, parentId)
-                        categoriaEnEdicion = null
+                    if (categEditing != null && categEditing?.id != null) {
+                        editarLn(categEditing!!.id!!, nombre, descripcion, parentId)
+                        categEditing = null
                     } else {
-                        guardarListener(nombre, descripcion, parentId)
+                        guardarLn(nombre, descripcion, parentId)
                     }
                     nombre = ""
                     descripcion = ""
@@ -317,13 +314,13 @@ class CategoriaV {
                 },
                 modifier = Modifier.Companion.weight(1f)
             ) {
-                Text(if (categoriaEnEdicion != null) "Actualizar" else "Agregar")
+                Text(if (categEditing != null) "Actualizar" else "Agregar")
             }
 
-            if (categoriaEnEdicion != null) {
+            if (categEditing != null) {
                 Button(
                     onClick = {
-                        categoriaEnEdicion = null
+                        categEditing = null
                         nombre = ""
                         descripcion = ""
                         selectedParent = categoriaNinguna
@@ -341,7 +338,7 @@ class CategoriaV {
     }
 
     @Composable
-    private fun Lista(onEditarClick: (CategoriaM) -> Unit) {
+    private fun Lista(fn: (CategoriaM) -> Unit) {
         val categorias by categorias.collectAsState(initial = emptyList())
         val components by components.collectAsState(initial = emptyList())
 
@@ -359,12 +356,12 @@ class CategoriaV {
             ) {
                 items(categorias.size) { index ->
                     CategoriaItem(
-                        categoria = categorias[index],
-                        component = components[index],
-                        onEditar = { onEditarClick(categorias[index]) },
-                        onEliminar = {
-                            categoriaAEliminar = categorias[index]
-                            mostrarDialogoConfirmacion = true
+                        c = categorias[index],
+                        co = components[index],
+                        edit = { fn(categorias[index]) },
+                        delete = {
+                            categDeleting = categorias[index]
+                            showConfirmDiag = true
                         }
                     )
                 }
@@ -374,12 +371,12 @@ class CategoriaV {
 
     @Composable
     private fun CategoriaItem(
-        categoria: CategoriaM,
-        component: CategoriaComponent,
-        onEditar: () -> Unit,
-        onEliminar: () -> Unit
+        c: CategoriaM,
+        co: CategoriaComponent,
+        edit: () -> Unit,
+        delete: () -> Unit
     ) {
-        val productCount = component.getCantProductos(categoria)
+        val productCount = co.getCantProductos(c)
 
         Card(
             modifier = Modifier.Companion.fillMaxWidth()
@@ -390,12 +387,12 @@ class CategoriaV {
                     .padding(16.dp)
             ) {
                 Text(
-                    text = categoria.nombre ?: "sin nombre",
+                    text = c.nombre ?: "sin nombre",
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.primary
                 )
                 Text(
-                    text = "${categoria.descripcion}",
+                    text = "${c.descripcion}",
                     style = MaterialTheme.typography.bodyMedium
                 )
                 // --- MOSTRAR EL CONTEO DE PRODUCTOS ---
@@ -409,7 +406,7 @@ class CategoriaV {
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Button(
-                        onClick = onEditar,
+                        onClick = edit,
                         modifier = Modifier.Companion.weight(1f),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -419,7 +416,7 @@ class CategoriaV {
                         Text("Editar")
                     }
                     Button(
-                        onClick = onEliminar,
+                        onClick = delete,
                         modifier = Modifier.Companion.weight(1f),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.errorContainer,

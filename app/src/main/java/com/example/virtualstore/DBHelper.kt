@@ -10,7 +10,7 @@ class DBHelper(context: Context) :
         private const val DATABASE_VERSION = 1
         private const val DATABASE_NAME = "VirtualStore.db"
     }
-    private val SQL_CREATE_TABLE_CATEGORIA = """
+    private val SQL_TABLE_CATEGORIA = """
         CREATE TABLE categoria (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             nombre TEXT NOT NULL,
@@ -19,7 +19,7 @@ class DBHelper(context: Context) :
             FOREIGN KEY (categoria_id) REFERENCES categoria(id)
         )
     """
-    private val SQL_CREATE_TABLE_PRODUCTO = """
+    private val SQL_TABLE_PRODUCTO = """
         CREATE TABLE producto (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             nombre TEXT NOT NULL,
@@ -29,7 +29,7 @@ class DBHelper(context: Context) :
             FOREIGN KEY (categoria_id) REFERENCES categoria(id) ON DELETE CASCADE
         )
     """
-    private val SQL_CREATE_TABLE_CLIENTE = """
+    private val SQL_TABLE_CLIENTE = """
         CREATE TABLE cliente (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             nombre TEXT NOT NULL,
@@ -37,7 +37,7 @@ class DBHelper(context: Context) :
             direccion TEXT DEFAULT NULL
         )
     """
-    private val SQL_CREATE_TABLE_REPARTIDOR = """
+    private val SQL_TABLE_REPARTIDOR = """
         CREATE TABLE repartidor (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             nombre TEXT NOT NULL,
@@ -45,7 +45,7 @@ class DBHelper(context: Context) :
             direccion TEXT DEFAULT NULL
         )
     """
-    private val SQL_CREATE_TABLE_VENTA = """
+    private val SQL_TABLE_VENTA = """
         CREATE TABLE venta (
             nro INTEGER PRIMARY KEY AUTOINCREMENT,
             fecha DATE NOT NULL DEFAULT CURRENT_DATE,
@@ -57,7 +57,7 @@ class DBHelper(context: Context) :
             FOREIGN KEY (repartidor_id) REFERENCES repartidor(id) ON DELETE CASCADE
         )
     """
-    private val SQL_CREATE_TABLE_DETALLE_VENTA = """
+    private val SQL_TABLE_DETALLE_VENTA = """
         CREATE TABLE detalle_venta (
             venta_nro INTEGER NOT NULL,
             producto_id INTEGER NOT NULL,
@@ -70,12 +70,12 @@ class DBHelper(context: Context) :
     """
 
     override fun onCreate(db: SQLiteDatabase) {
-        db.execSQL(SQL_CREATE_TABLE_CATEGORIA)
-        db.execSQL(SQL_CREATE_TABLE_PRODUCTO)
-        db.execSQL(SQL_CREATE_TABLE_CLIENTE)
-        db.execSQL(SQL_CREATE_TABLE_REPARTIDOR)
-        db.execSQL(SQL_CREATE_TABLE_VENTA)
-        db.execSQL(SQL_CREATE_TABLE_DETALLE_VENTA)
+        db.execSQL(SQL_TABLE_CATEGORIA)
+        db.execSQL(SQL_TABLE_PRODUCTO)
+        db.execSQL(SQL_TABLE_CLIENTE)
+        db.execSQL(SQL_TABLE_REPARTIDOR)
+        db.execSQL(SQL_TABLE_VENTA)
+        db.execSQL(SQL_TABLE_DETALLE_VENTA)
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {

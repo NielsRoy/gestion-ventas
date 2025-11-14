@@ -118,12 +118,12 @@ data class ProductoM(
                 nombre = getString(getColumnIndexOrThrow("nombre")),
                 precio = getDouble(getColumnIndexOrThrow("precio")),
                 cantidad = getInt(getColumnIndexOrThrow("cantidad")),
-                categoria = CategoriaM(dbHelper = dbHelper).obtenerPorId(categoriaId)
+                categoria = CategoriaM(dbHelper = dbHelper).getPorId(categoriaId)
             )
         }
     }
 
     fun obtenerTodasLasCategorias(): List<CategoriaM> {
-        return CategoriaM(dbHelper = dbHelper).obtenerTodos()
+        return CategoriaM(dbHelper = dbHelper).getTodos()
     }
 }

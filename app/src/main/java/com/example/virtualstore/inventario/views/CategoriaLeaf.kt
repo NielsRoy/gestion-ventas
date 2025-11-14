@@ -1,4 +1,6 @@
-package com.example.virtualstore.inventario.models
+package com.example.virtualstore.inventario.views
+
+import com.example.virtualstore.inventario.models.CategoriaM
 
 class CategoriaLeaf: CategoriaComponent {
     private var categoria: CategoriaM

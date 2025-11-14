@@ -16,13 +16,13 @@ data class CategoriaM (
             throw Exception("El campo nombre es obligatorio")
         }
         val db = dbHelper?.writableDatabase ?: throw IllegalStateException("dbHelper is null")
-        val values = toContentValues(nombre, descripcion, categoria_id)
+        val values = toCV(nombre, descripcion, categoria_id)
         val result = db.insert("categoria", null, values)
         if (result == -1L) {
             throw Exception("Error al guardar la categoría")
         }
     }
-    fun obtenerTodos(): List<CategoriaM> {
+    fun getTodos(): List<CategoriaM> {
         val categoriasList = mutableListOf<CategoriaM>()
         val db = dbHelper?.readableDatabase ?: throw IllegalStateException("dbHelper is null")
         val cursor = db.query(
@@ -31,14 +31,14 @@ data class CategoriaM (
             null, null, null, null, "id DESC"
         )
         while (cursor.moveToNext()) {
-            val categoria = toCategoriaM(cursor)
+            val categoria = toCM(cursor)
             categoriasList.add(categoria)
         }
         cursor.close()
         return categoriasList
     }
 
-    fun obtenerPorId(id: Int): CategoriaM? {
+    fun getPorId(id: Int): CategoriaM? {
         val db = dbHelper?.readableDatabase ?: throw IllegalStateException("dbHelper is null")
         val cursor = db.query(
             "categoria",
@@ -49,7 +49,7 @@ data class CategoriaM (
         )
         var categoria: CategoriaM? = null
         if(cursor.moveToFirst()) {
-            categoria = toCategoriaM(cursor)
+            categoria = toCM(cursor)
         }
         cursor.close()
         return categoria
@@ -60,7 +60,7 @@ data class CategoriaM (
             throw Exception("El campo nombre es obligatorio")
         }
         val db = dbHelper?.writableDatabase ?: throw IllegalStateException("dbHelper is null")
-        val values = toContentValues(nombre, descripcion, categoria_id)
+        val values = toCV(nombre, descripcion, categoria_id)
         val filasAfectadas = db.update("categoria", values, "id = ?", arrayOf(id.toString()))
         if (filasAfectadas <= 0) {
             throw Exception("Error al actualizar la categoría")
@@ -69,7 +69,7 @@ data class CategoriaM (
 
     fun eliminar(id: Int) {
         val db = dbHelper?.writableDatabase ?: throw IllegalStateException("dbHelper is null")
-        val subCategorias = obtenerSubCategorias(id)
+        val subCategorias = getSubcate(id)
         if (subCategorias.isNotEmpty()) {
             throw Exception("No se puede eliminar: Esta categoría contiene subcategorías.")
         }
@@ -79,7 +79,7 @@ data class CategoriaM (
         }
     }
 
-    private fun toContentValues(nombre: String, descripcion: String, categoria_id: Int? = null): ContentValues {
+    private fun toCV(nombre: String, descripcion: String, categoria_id: Int? = null): ContentValues {
         return ContentValues().apply {
             put("nombre", nombre)
             put("descripcion", descripcion)
@@ -87,7 +87,7 @@ data class CategoriaM (
         }
     }
 
-    private fun toCategoriaM(cursor: Cursor): CategoriaM {
+    private fun toCM(cursor: Cursor): CategoriaM {
         with(cursor) {
             val catIdIndex = getColumnIndexOrThrow("categoria_id")
             val categoriaId = if (isNull(catIdIndex)) null else getInt(catIdIndex)
@@ -114,7 +114,7 @@ data class CategoriaM (
         return cantidad
     }
 
-    fun obtenerSubCategorias(parentId: Int): List<CategoriaM> {
+    fun getSubcate(parentId: Int): List<CategoriaM> {
         val categoriasList = mutableListOf<CategoriaM>()
         val db = dbHelper?.readableDatabase ?: throw IllegalStateException("dbHelper is null")
         val cursor = db.query(
@@ -125,7 +125,7 @@ data class CategoriaM (
             null, null, null
         )
         while (cursor.moveToNext()) {
-            val categoria = toCategoriaM(cursor)
+            val categoria = toCM(cursor)
             categoriasList.add(categoria)
         }
         cursor.close()
